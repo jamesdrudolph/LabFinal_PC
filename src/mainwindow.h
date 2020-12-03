@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QUdpSocket>
+#include <QFileDialog>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -28,6 +29,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QUdpSocket *udpSocket;
+    QString testImagePath;
     bool connected = false;
 
     void toggleEnabledControls();
@@ -35,5 +37,7 @@ private:
     void disconnect();
     void connect();
     void sendValue(int value, QString valueType);
+    bool openFileDialog(QString &filePath);
+    void transfer_image(QString bmpFilePath, QByteArray msg);
 };
 #endif // MAINWINDOW_H

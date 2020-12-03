@@ -1,5 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <iostream>
+#include <fstream>
+#include <QThread>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -27,7 +30,25 @@ void MainWindow::on_btnConnect_clicked()
 
 void MainWindow::on_btnSendOverlay_clicked()
 {
+    if (openFileDialog(testImagePath)) {
+        QImage qImage = QImage(testImagePath);
+        QPixmap qPixmap = QPixmap::fromImage(qImage);
+        transfer_image(testImagePath, "IMAGE");
+    }
+}
 
+bool MainWindow::openFileDialog(QString &filePath) {
+    QFileDialog dialog(this);
+    dialog.setAcceptMode(QFileDialog::AcceptOpen);
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setNameFilter(tr("Bitmap Images (*.bmp)"));
+
+    if (dialog.exec() && dialog.selectedFiles().length() > 0) {
+        filePath = dialog.selectedFiles()[0];
+        return true;
+    }
+
+    return false;
 }
 
 void MainWindow::on_sliderContrastValue_valueChanged(int value)
@@ -107,4 +128,52 @@ void MainWindow::toggleEnabledControls() {
 void MainWindow::toggleWidgetEnabled(QWidget *qWidget) {
     //toggle enabled of QWidget
     qWidget->setEnabled(!qWidget->isEnabled());
+}
+
+void MainWindow::transfer_image(QString bmpFilePath, QByteArray image)
+{
+    //std::ifstream is (bmpFilePath.toStdString().c_str(), std::ifstream::binary);
+    std::ifstream is (bmpFilePath.toStdString().c_str(), std::ios::in|std::ios::binary|std::ios::ate);
+    //get 1024 bytes of the file, send over UDP
+
+    if (is) {
+      udpSocket->write("START_"+image+"_SEND");
+      QThread::msleep(2); //sleeping after each packet makes it work on remote server
+                          //likely not the ideal way but w/e
+      int fileSize = is.tellg();
+      int remainder = fileSize % 1024;
+      qDebug() << "\nFileSize: " << fileSize << " Remainder: " << remainder;
+      is.seekg (0, std::ios::beg);
+      char * buffer = new char [1024];
+      if (fileSize <= 1024)
+      {
+          buffer = new char [fileSize];
+          is.read (buffer, fileSize);
+          udpSocket->write(buffer,fileSize);
+          QThread::msleep(2);
+      }
+      else
+      {
+        for(int x = 0; x < int((fileSize - remainder) / 1024); x++)
+        {
+            buffer = new char [1024];
+            is.read (buffer, 1024);
+            udpSocket->write(buffer,1024);
+            QThread::msleep(2);
+            qDebug() << x;
+
+        }
+        if(remainder > 0)
+        {
+            buffer = new char [remainder];
+            is.read (buffer, remainder);
+            udpSocket->write(buffer,remainder);
+            QThread::msleep(2);
+        }
+      }
+      while(udpSocket->hasPendingDatagrams()){}
+      udpSocket->write("END_"+image+"_SEND");
+      QThread::msleep(2);
+      qDebug() << "Done";
+    }
 }
