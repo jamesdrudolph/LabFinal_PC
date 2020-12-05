@@ -117,6 +117,7 @@ void MainWindow::toggleEnabledControls() {
     toggleWidgetEnabled(ui->lblContrastValue);
     toggleWidgetEnabled(ui->sliderBrightnessValue);
     toggleWidgetEnabled(ui->sliderContrastValue);
+    toggleWidgetEnabled(ui->btnToggleOverlay);
 
     //toggle enabled of connect controls
     toggleWidgetEnabled(ui->lblIP);
@@ -176,4 +177,9 @@ void MainWindow::transfer_image(QString bmpFilePath, QByteArray image)
       QThread::msleep(2);
       qDebug() << "Done";
     }
+}
+
+void MainWindow::on_btnToggleOverlay_clicked()
+{
+    udpSocket->write("TOGGLE_OVERLAY");
 }

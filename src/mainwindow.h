@@ -26,6 +26,8 @@ private slots:
 
     void on_sliderBrightnessValue_valueChanged(int value);
 
+    void on_btnToggleOverlay_clicked();
+
 private:
     Ui::MainWindow *ui;
     QUdpSocket *udpSocket;
